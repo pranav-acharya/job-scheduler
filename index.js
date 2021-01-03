@@ -4,7 +4,6 @@ var db = new sqlite3.Database(file);
 const { 
   createTableIfNotExists, 
   getJobList, 
-  getNextJob,
   computeNextJob,
   scheduleJob,
   updateJob,
@@ -25,17 +24,18 @@ let nextJob = null;
 // preprocessing
 db.serialize(function() {
   createTableIfNotExists(db);
-  nextJob = computeNextJob(db);
-  if (nextJob)
-    nextJobTimeout = scheduleJob(nextJob);
+  nextJob = computeNextJob(db, nextJob => {
+    if (nextJob)
+      nextJobTimeout = scheduleJob(nextJob);
+  });
 }); 
 
 app.get('/jobs', (req, res) => {
-  res.json(getJobList(db));
+  getJobList(db, result => res.json(result));
 })
 
 app.get('/nextJob', (req, res) => {
-   res.json(getNextJob());
+   res.json(nextJob);
 });
 
 app.post('/job', (req, res) => {
@@ -43,19 +43,23 @@ app.post('/job', (req, res) => {
   addJob(db, job, (id) => {
     if (!nextJob || job.timestamp < nextJob.timestamp) {
       console.log('job queue min updated');
-      computeNextJob(db);
+      computeNextJob(db, job => { nextJob = job; });
+    } else {
+      res.json({ id });
     }
-    res.json({ id });
   });
 });
 
 app.put('/job/:id', (req, res) => {
   const jobData = req.body;
   const jobId = req.params.id;
-  updateJob();
-  if (jobData.timestamp) {
+  updateJob(db, jobId, jobData);
+  // if the new data contains timestamp changes and the newer timestamp is less than the min
+  if (jobData.timestamp && job.timestamp < nextJob.timestamp) { 
     clearTimeout(nextJobTimeout);
-    nextJobTimeout = scheduleJob(computeNextJob(db));
+    computeNextJob(db, nextJob => {
+      nextJobTimeout = scheduleJob(nextJob);
+    });
   }
   res.end();
 });

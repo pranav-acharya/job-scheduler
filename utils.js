@@ -4,41 +4,36 @@ const JOB_TABLE = 'job';
 const createTableIfNotExists = (db) => {
     const query = `CREATE TABLE IF NOT EXISTS ${JOB_TABLE} (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      data TEXT, timestamp DATE,
+      data TEXT, 
+      timestamp DATE,
       type VARCHAR(50),
       status VARCHAR(50),
       logs TEXT, 
-      completed BOOL
+      completed BOOL DEFAULT 0
     );`;
     db.run(query);
 }
 
-const computeNextJob = (db) => {
+const computeNextJob = (db, cb) => {
     let nextJob = null;
-    // TODO: convert timestamp to IN and test MIN
-    db.each(`SELECT id, MIN(timestamp) FROM ${JOB_TABLE} WHERE completed = FALSE`, function (err, row) {
-        console.log(row);
-        nextJob = row;
+    db.all(`SELECT id, MIN(timestamp) as timestamp FROM ${JOB_TABLE} WHERE completed=0`, function (err, rows) {
+        console.log(rows);
+        nextJob = rows[0];
+        cb(nextJob);
     });
-    return nextJob;
 }
 
-const updateJob = (db, jobData) => {
-    // TODO: implement update
-    // const query = `CREATE TABLE IF NOT EXISTS ${JOB_TABLE} (
-    //     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    //     data TEXT, 
-    //     timestamp DATE,
-    //     type VARCHAR(50),
-    //     status VARCHAR(50) DEFAULT 'PENDING',
-    //     logs TEXT, 
-    //     completed BOOL DEFAULT FALSE
-    //   );`;
-    // var stmt = db.prepare(`UPDATE ${JOB_TABLE}(data, type, timestamp) VALUES (?,?,?)`);
-    // const { data, type, timestamp } = jobData;
-    // stmt.run(data, type, timestamp); 
-    // stmt.finalize();
-    // db.run(query);
+const updateJob = (db, jobId, jobData, cb) => {
+    const { data, type, timestamp } = jobData;
+    var stmt = db.prepare(`UPDATE ${JOB_TABLE} SET data='${data}', type='${type}', timestamp='${timestamp}' WHERE id=${jobId}`);
+    stmt.run(data, type, timestamp, (err, result) => {
+        if (err) {
+            return console.log(err.message);
+        }
+        console.log(`A row has been inserted with rowid ${Object.keys(this)}`);
+        cb(this.lastID);
+    }); 
+    stmt.finalize();
 };
 
 const addJob = (db, jobData, cb) => {
@@ -50,7 +45,7 @@ const addJob = (db, jobData, cb) => {
           return console.log(err.message);
         }
         // get the last insert id
-        console.log(`A row has been inserted with rowid ${this.lastID}`);
+        console.log(`A row has been inserted with rowid ${Object.keys(this)}`);
         cb(this.lastID);
     });
     stmt.finalize();
@@ -64,26 +59,22 @@ const scheduleJob = (job) => {
     return timeout;
 };
 
-const getJobList = (db) => {
+const getJobList = (db, cb) => {
     const result = [];
-    db.serialize(function () {
-        db.each(`SELECT * FROM ${JOB_TABLE}`, (err, row) => result.push(row))
+    db.all(`SELECT * FROM ${JOB_TABLE}`, (err, rows) => { 
+        cb(rows);
     });
-    return result;
 }
 
 const executeJob = (job) => {
     console.log("Executed: " + job.id + " at " + new Date());
 };
 
-const getNextJob = () => nextJob;
-
 module.exports = {
     DB_NAME,
     JOB_TABLE,
     createTableIfNotExists,
     getJobList,
-    getNextJob,
     computeNextJob,
     scheduleJob,
     executeJob,
