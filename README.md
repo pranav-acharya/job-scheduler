@@ -44,3 +44,33 @@ Space complexity: O(1) Here only one job stays in memory, rest is on disk
 
 TimeComplexity: O(log N) heap operations
 SpaceComplexity O(N) since most of the jobs or job pointers will be in memory
+
+### Running tests
+Start the server
+```
+node .
+```
+Fetch the job list, should be empty initially
+```
+curl http://localhost:3000/jobs
+```
+
+Add a job
+```
+curl --header "Content-Type: application/json" --request POST --data '{"data":"test","timestamp":"1609660803988", "type":"email"}' http://localhost:3000/job
+```
+
+Check the job in the queue
+```
+curl http://localhost:3000/nextJob
+```
+
+Update an existing job
+```
+curl --header "Content-Type: application/json" --request PUT --data '{"data":"test","timestamp":"1609660803975", "type":"email"}' http://localhost:3000/job
+```
+
+Re-Check the job in the queue
+```
+curl http://localhost:3000/nextJob
+```
