@@ -15,6 +15,7 @@ const createTableIfNotExists = (db) => {
 
 const computeNextJob = (db) => {
     let nextJob = null;
+    // TODO: convert timestamp to IN and test MIN
     db.each(`SELECT id, MIN(timestamp) FROM ${JOB_TABLE} WHERE completed = FALSE`, function (err, row) {
         console.log(row);
         nextJob = row;
@@ -23,20 +24,21 @@ const computeNextJob = (db) => {
 }
 
 const updateJob = (db, jobData) => {
-    const query = `CREATE TABLE IF NOT EXISTS ${JOB_TABLE} (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        data TEXT, 
-        timestamp DATE,
-        type VARCHAR(50),
-        status VARCHAR(50) DEFAULT 'PENDING',
-        logs TEXT, 
-        completed BOOL DEFAULT FALSE
-      );`;
-    var stmt = db.prepare(`UPDATE ${JOB_TABLE}(data, type, timestamp) VALUES (?,?,?)`);
-    const { data, type, timestamp } = jobData;
-    stmt.run(data, type, timestamp); 
-    stmt.finalize();
-    db.run(query);
+    // TODO: implement update
+    // const query = `CREATE TABLE IF NOT EXISTS ${JOB_TABLE} (
+    //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    //     data TEXT, 
+    //     timestamp DATE,
+    //     type VARCHAR(50),
+    //     status VARCHAR(50) DEFAULT 'PENDING',
+    //     logs TEXT, 
+    //     completed BOOL DEFAULT FALSE
+    //   );`;
+    // var stmt = db.prepare(`UPDATE ${JOB_TABLE}(data, type, timestamp) VALUES (?,?,?)`);
+    // const { data, type, timestamp } = jobData;
+    // stmt.run(data, type, timestamp); 
+    // stmt.finalize();
+    // db.run(query);
 };
 
 const addJob = (db, jobData, cb) => {
